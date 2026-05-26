@@ -22,4 +22,4 @@ Now you need a http server for it, just don't well... put the copyrighted assets
 I just `python -m http.server 8000`
 ## 2. Play
 Beacuse this engine uses the same file structure the original you can now simply play or edit the textures.
-You can even change the language if you change the `const mapRes = await fetch(`${assetRoot}data/maps/en/${currentMapName}.xml`);` line.
+You can even change the language if you change the ```const mapRes = await fetch(`${assetRoot}data/maps/en/${currentMapName}.xml`);``` line.
