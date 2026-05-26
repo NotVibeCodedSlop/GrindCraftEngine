@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, interactive-widget=resizes-content">
+    <title>Grindcraft</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --panel-bg: #000000;
+            --grid-bg: #8b8b8b;
+            --item-bg: #aeaeae;
+            --text-color: #ffffff;
+            --highlight: #ffff00;
+        }
+        #map-container {
+            width: 1230px; /* Original image size */
+            height: 1230px;
+            transform-origin: 0 0; /* Important: zoom from top-left */
+            position: relative;
+            transition: transform 0.1s ease-out; /* Optional: smooth movement */
+            -webkit-user-drag: none; /* Stops the browser from trying to drag the image */
+            user-select: none;      /* Stops text highlighting from interfering */
+            pointer-events: auto;   /* Keep clicks working */
+        }
+        #map-viewport {
+            width: 600px; /* Window size */
+            max-width:90dvw;
+            height: 600px;
+            overflow: hidden; /* Clips the map so it stays in the box */
+            cursor: grab;
+            z-index:54545;
+            border: 2px solid #333;
+        }
+        .map-marker {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            image-rendering: pixelated;
+            object-fit: contain;
+            background-size: contain;
+            background-repeat: no-repeat;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+        }
+
+        .map-marker:hover::after {
+            content: attr(data-name);
+            position: absolute;
+            top: -25px;
+            background: black;
+            padding: 2px 5px;
+            white-space: nowrap;
+        }
+        /* Prevent dragging images and text */
+        img,
+        .grinder-btn,
+        .craft-item {
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+    touch-action: none; /* Disables browser scrolling/zooming */
+    overflow: hidden;   /* Prevents the page from moving */
+    overscroll-behavior: none;
+        }
+        /* Left Column: Grind & Achievements */
+        #left-panel {
+            width: 320px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid #333;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: normal;
+            margin: 0 0 10px 0;
+        }
+
+        /* Grinder Buttons */
+        .grinder-btn {
+            width: 100%;
+            height: 80px;
+            background-color: #ccc;
+            border: 3px solid #fff;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            box-sizing: border-box;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .grinder-btn:active {
+            transform: scale(0.98);
+        }
+
+        .grinder-btn .bg-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6;
+            z-index: 1;
+        }
+
+        .grinder-btn span {
+            position: relative;
+            z-index: 2;
+            color: white;
+            text-shadow: 1px 1px 2px black, -1px -1px 2px black;
+            font-weight: bold;
+            font-size: 18px;
+            text-transform: capitalize;
+        }
+        body {
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+}
+        .grinder-btn img.icon {
+            position: relative;
+            z-index: 2;
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 4px;
+            border: 2px solid #222;
+            image-rendering: pixelated;
+            object-fit: contain;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 6px;
+            background-color: #00ff00;
+            width: 0%;
+            z-index: 3;
+        }
+
+        /* Achievements Section */
+        #achievements-container {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #achievements-container h2 {
+            color: var(--highlight);
+            text-align: center;
+            font-weight: normal;
+            margin-bottom: 10px;
+        }
+
+        #achievements-list {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .achievement {
+            background: #333;
+            border: 2px solid #555;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: var(--highlight);
+        }
+
+        #reset-btn {
+            margin-top: 10px;
+            background: #550000;
+            color: white;
+            border: 1px solid #ff0000;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        #reset-btn:hover {
+            background: #ff0000;
+        }
+
+        /* Right Column: Craft Grid */
+        #right-panel {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-color);
+        }
+
+        #craft-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+            gap: 4px;
+            background-color: #fff;
+            padding: 4px;
+            overflow-y: auto;
+            align-content: start;
+        }
+
+        /* Individual Craft Item Box */
+        .craft-item {
+            width: 64px;
+            height: 64px;
+            background-color: var(--item-bg);
+            position: relative;
+            cursor: pointer;
+            border-top: 3px solid #cccccc;
+            border-left: 3px solid #cccccc;
+            border-bottom: 3px solid #7a7a7a;
+            border-right: 3px solid #828282;
+            box-sizing: border-box;
+            transition: background-color 0.1s, opacity 0.1s;
+        }
+
+        .craft-item:active:not(.disabled) {
+            border-top: 3px solid #222;
+            border-left: 3px solid #222;
+            border-bottom: 3px solid #888;
+            border-right: 3px solid #888;
+        }
+
+        .craft-item.disabled {
+            opacity: 1;
+            cursor: not-allowed;
+            border-top: 3px solid #3d3d3d;
+            border-right: 3px solid #878787;
+            border-left: 3px solid #3e3e3e;
+            border-top: 3px solid #3e3e3e;
+            background-color: #5e5e5e;
+        }
+
+        /* Hover Highlight Classes */
+        .craft-item.highlight-have {
+            opacity: 1 !important;
+            background-color: #888888 !important;
+            /* Gray */
+            border-color: #aaaaaa !important;
+        }
+
+        .craft-item.highlight-lack {
+            opacity: 1 !important;
+            background-color: #aa0000 !important;
+            /* Red */
+            border-color: #ff4444 !important;
+        }
+
+        .craft-item img {
+            width: 40px;
+            height: 40px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            image-rendering: pixelated;
+            object-fit: contain;
+        }
+
+        .craft-item .count {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        /* Tooltip */
+        /* --- Tooltip Overhaul --- */
+        .tooltip {
+            position: fixed;
+            background-color: #c6c6c6;
+            border-top: 3px solid #ffffff;
+            border-left: 3px solid #ffffff;
+            border-bottom: 3px solid #555555;
+            border-right: 3px solid #555555;
+            padding: 8px;
+            color: #ffffff;
+            text-shadow: 1px 1px 0 #333;
+            font-size: 14px;
+            pointer-events: none;
+            display: none;
+            z-index: 1009;
+            min-width: 120px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+            position: fixed !important; /* Force it to stay out of the document flow */
+    pointer-events: none !important; /* The most important: ignore all mouse/touch */
+    z-index: 999999 !important;      /* Sit on top of everything visually */
+    display: none;                   /* Default hidden */
+    /* Ensure it doesn't have any margins or padding that create a hitbox */
+    margin: 0;
+    padding: 8px;
+        }
+
+        .tooltip-title {
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        /* Crafter Tooltip Styles */
+        .tooltip-ingredients {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .ingredient-box {
+            width: 48px;
+            height: 48px;
+            background-color: #8b8b8b;
+            border-top: 2px solid #555555;
+            border-left: 2px solid #555555;
+            border-bottom: 2px solid #ffffff;
+            border-right: 2px solid #ffffff;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .ingredient-box img {
+            width: 32px;
+            height: 32px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            image-rendering: pixelated;
+            object-fit: contain;
+            -webkit-user-drag: none;
+        }
+
+        .ingredient-box .qty {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 12px;
+            color: white;
+        }
+
+        .tooltip-desc {
+            color: #ffffff;
+            font-size: 12px;
+            max-width: 180px;
+            line-height: 1.2;
+        }
+
+        /* Grinder Tooltip Styles */
+        .grind-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .grind-row img {
+            width: 24px;
+            height: 24px;
+            image-rendering: pixelated;
+            object-fit: contain;
+            -webkit-user-drag: none;
+        }
+
+        .grind-row .arrow-icon {
+            width: 32px;
+            height: 24px;
+            object-fit: contain;
+            opacity: 0.6;
+        }
+
+        .dep-badge {
+            display: inline-block;
+            padding: 2px 5px;
+            margin: 2px;
+            border-radius: 3px;
+            color: white;
+            font-size: 10px;
+            text-transform: capitalize;
+        }
+
+        /* --- Header Controls --- */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .ctrl-btn {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(to bottom, #eeeeee, #aaaaaa);
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-bottom: 2px solid #555555;
+            border-right: 2px solid #555555;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #000;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .ctrl-btn:active {
+            border-top: 2px solid #555555;
+            border-left: 2px solid #555555;
+            border-bottom: 2px solid #ffffff;
+            border-right: 2px solid #ffffff;
+            background: #cccccc;
+        }
+
+        /* --- Grinder UI Updates --- */
+        .grinder-btn .icon-wrapper {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            background: #000000;
+            border-radius: 8px;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        /* Remove old border/bg from .icon since icon-wrapper handles it now */
+        .grinder-btn img.icon {
+            width: 48px;
+            height: 48px;
+            background: transparent;
+            border: none;
+            padding: 0;
+            position: relative;
+            z-index: 2;
+            image-rendering: pixelated;
+            object-fit: contain;
+            -webkit-user-drag: none;
+        }
+
+        .progress-container {
+            position: absolute;
+            bottom: 6px;
+            left: 5px;
+            width: 46px;
+            /* Fits inside the black box */
+            height: 6px;
+            background-color: #ff0000;
+            /* Red background */
+            z-index: 3;
+        }
+
+        .progress-bar {
+            position: static;
+            /* Overrides previous absolute positioning */
+            height: 100%;
+            background-color: #00ff00;
+            /* Green Fill */
+            width: 0%;
+        }
+
+        .active-tool {
+            position: absolute;
+            right: 96px;
+            /* Positions it slightly overlapping the black box */
+            top: 50%;
+            transform: translateY(-50%);
+            width: 64px;
+            height: 64px;
+            image-rendering: pixelated;
+            object-fit: contain;
+            z-index: 4;
+            pointer-events: none;
+            display: none;
+            -webkit-user-drag: none;
+        }
+
+#map-viewport-container {
+    position:fixed;
+    left:calc(50dvw - (1230px / 4));
+    top:calc(50dvh - (1230px / 4));
+    background:black;
+    max-width:70dvw;
+    max-height:70dvh;
+    z-index:345435;
+}
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    /* Stops mobile browsers from scrolling/bouncing the whole page */
+    overflow: hidden !important;
+    overscroll-behavior: none; 
+    touch-action: none;
+}
+        /* Media Query for small screens */
+@media (max-width: 768px) {
+    body {
+        flex-direction: column; /* Stack columns instead of side-by-side */
+    }
+
+    #left-panel {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 2px solid #333;
+        padding: 10px;
+    }
+
+    #achievements-container {
+        display: none; /* Hide achievements as requested */
+    }
+
+    #grinders-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 0.95fr));
+        gap: 10px;
+    }
+
+    .grinder-btn {
+        height: 50px; /* Smaller height */
+        margin-bottom: 0;
+    }
+    
+    .grinder-btn span {
+        font-size: 14px;
+    }
+
+    .grinder-btn img.icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    #right-panel {
+        overflow-y: auto;
+    }
+
+#map-viewport-container {
+    position:fixed;
+    left:0;
+    top:calc(50dvh - (1230px / 4));
+    background:black;
+    max-width:70dvw;
+    z-index:345435;
+}}
+/* Add to your CSS */
+body {
+    -moz-text-size-adjust: none; /* Specifically for Firefox text inflation */
+    text-size-adjust: none;
+    overflow: hidden !important;
+}
+html {
+    max-height: 99dvh !important;
+}
+    </style>
+</head>
+
+<body>
+
+    <!-- Background Music -->
+     <!--Made by github/NotVibeCodedSlop-->
+    <audio id="bgm" loop ></audio>
+
+    <div id="left-panel">
+        <h1 id="map-title">Grind</h1>
+        <div id="grinders-container"></div>
+        <div id="map-viewport-container" style="display:none;">
+        <div class="ctrl-btn" onclick="toggleMap()" style="z-index:435435435435;">x</div>
+        <div id="map-viewport">
+            <div id="map-container"></div>
+        </div>
+        </div>
+        <div id="achievements-container">
+            <h2>Achievements</h2>
+            <div id="achievements-list"></div>
+        </div>
+    </div>
+
+    <div id="right-panel">
+        <div class="header-container">
+            <h1 style="margin:0;">Craft</h1><h3 style="font-size:2px;">made by github/NotVibeCodedSlop</h3>
+            <div class="header-controls">
+                <div class="ctrl-btn" onclick="alert('Pause Toggled!')">⏸</div>
+                <div class="ctrl-btn" onclick="resetSave()">⚙</div>
+                <div class="ctrl-btn" onclick="toggleMap()">🗺</div>
+            </div>
+        </div>
+        <div id="craft-grid"></div>
+    </div>
+
+    <div id="tooltip" class="tooltip"></div>
+    <style id="map-marker-thing"></style>
+    <script>
+
+document.oncontextmenu = (e) => {
+    e.preventDefault(); // Stop the browser menu
+};
+        // --- GAME STATE ---
+        let inventory = { "hand": 1, "none": 1 };
+        let achievements = [];
+        const gameData = { grinders: [], grinds: {}, crafters: [],markers:[] };
+        let timeScale = 1;
+        // --- AUDIO SYSTEM ---
+        let audioStarted = false;
+        const audioCache = {};
+        const activeSounds = {};
+        let assetRoot = "./game/";
+        document.body.addEventListener('click', () => {
+            if (!audioStarted) {
+                const bgm = document.getElementById('bgm');
+                bgm.volume = 0.4;
+                bgm.play().catch(e => console.log("BGM blocked by browser:", e));
+                audioStarted = true;
+            }
+        }, { once: true });
+
+        function preloadSounds() {
+            const prefixes = new Set();
+            prefixes.add("achieve");
+
+            gameData.crafters.forEach(c => {
+                if (c.soundPrefix && c.soundPrefix !== "none" && c.soundPrefix !== "") {
+                    prefixes.add(c.soundPrefix);
+                }
+            });
+
+            prefixes.forEach(prefix => {
+                audioCache[prefix] = [];
+                for (let i = 1; i <= 6; i++) {
+                    const audio = new Audio(`${assetRoot}sounds/${prefix}${i}.mp3`);
+                    audio.preload = "auto";
+                    audio.volume = 0.6;
+                    audioCache[prefix].push(audio);
+                }
+            });
+        }
+
+        function playSound(prefix, loopDuration = 0) {
+            if (!prefix || prefix === "none" || prefix === "" || !audioCache[prefix]) return;
+
+            if (activeSounds[prefix]) {
+                activeSounds[prefix].pause();
+                activeSounds[prefix].currentTime = 0;
+            }
+
+            const randIndex = Math.floor(Math.random() * 6);
+            const snd = audioCache[prefix][randIndex];
+
+            if (loopDuration > 0) {
+                snd.loop = true;
+                snd.play().catch(e => { });
+                activeSounds[prefix] = snd;
+
+                setTimeout(() => {
+                    snd.pause();
+                    snd.currentTime = 0;
+                    snd.loop = false;
+                    if (activeSounds[prefix] === snd) {
+                        delete activeSounds[prefix];
+                    }
+                }, loopDuration * 1000 * timeScale);
+            } else {
+                snd.loop = false;
+                snd.play().catch(e => { });
+                activeSounds[prefix] = snd;
+            }
+            snd.speed = timeScale;
+        }
+
+        // --- SAVE SYSTEM ---
+        function saveGame() {
+            if (isResetting) return; // Block saving during reset
+            localStorage.setItem('grindcraft_save', JSON.stringify({
+                inventory: inventory,
+                achievements: achievements
+            }));
+        }
+
+        function loadGame() {
+            const save = localStorage.getItem('grindcraft_save');
+            if (save) {
+                const parsed = JSON.parse(save);
+                inventory = parsed.inventory;
+                achievements = parsed.achievements;
+
+                inventory["hand"] = 1;
+                inventory["none"] = 1;
+            }
+        }
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        // Global variable
+        let isResetting = false;
+
+        function resetSave() {
+            if (confirm("Are you sure? This will wipe EVERYTHING.")) {
+                isResetting = true; // Stop any save attempts
+                localStorage.removeItem('grindcraft_save');
+                
+                // Use a clean reload
+                window.location.href = window.location.pathname;
+            }
+        }
+        function toggleMap() {
+            const map = document.querySelector("#map-viewport-container");
+            if (map.style.display === "block") {
+                map.style.display="none";
+            } else {
+                map.style.display="block";
+                initMapMarkers()
+            }
+        }
+        let mainDoc; 
+        let mapsArray;
+        let activeIntervals = [];
+        function clearIntervals() {
+            // 1. Clear all intervals
+            activeIntervals.forEach(id => clearInterval(id));
+            activeIntervals = []; // Reset the list
+        }
+        // --- BOOT SEQUENCE ---
+        async function bootGame(mapindex=null) {
+            try {
+                loadGame();
+
+                const parser = new DOMParser();
+
+                const mainRes = await fetch(`${assetRoot}data/settings.xml`);
+                const mainText = await mainRes.text();
+                const mainDoc = parser.parseFromString(mainText, "text/xml");
+
+                const mapNodes = mainDoc.querySelectorAll("maps map");
+                const markerNodes = mainDoc.querySelectorAll("markers marker");
+                const mapsArray = Array.from(mapNodes).map(node => node.textContent);
+                const markersArray = Array.from(markerNodes).map(node => node.textContent);
+                let markers = [];
+                markersArray.forEach(m => {
+                    markersplit = m.split(",")
+                    parsedmarker = {name:markersplit[0],x:markersplit[1],y:markersplit[2],unlocked: markersplit[0].trim().replace(/\s+/g, '') === "CityState"}
+                    markers.push(parsedmarker);
+                })
+                gameData.markers = markers;
+                let condition = mapindex !== null && typeof(mapindex) === "number";
+                const currentMapIndex = (condition) 
+                    ? mapindex 
+                    : parseInt(mainDoc.querySelector("current_map").textContent);
+                console.log(currentMapIndex)
+                const currentMapName = mapsArray[currentMapIndex];
+
+                const mapRes = await fetch(`${assetRoot}data/maps/en/${currentMapName}.xml`);
+                const mapText = await mapRes.text();
+                const mapDoc = parser.parseFromString(mapText, "text/xml");
+
+                parseMapData(mapDoc);
+                preloadSounds();
+                initUI();
+
+        document.querySelector("audio#bgm").src=`${assetRoot}sounds/1up.ogg`;
+        document.querySelector("div#map-container").style.backgroundImage = `url('${assetRoot}img/mapBackground.png')`;
+        document.querySelector("style#map-marker-thing").innerText = `.map-marker 
+        {background-image:url(${assetRoot}img/sign.png)
+        }`;
+                activeIntervals.push(setInterval(autoGrindLoop, 100 * timeScale));
+            } catch (error) {
+                console.error("Failed to load game data:", error);
+                document.body.innerHTML = `<h2 style="color:red; padding:20px;">Error loading XML files. Check console.</h2>`;
+            }
+        }
+        async function switchMap(index) {
+            // 1. Reset map-specific state
+            gameData.markers = []; // Clear current markers
+            gameData.crafters = [];
+            gameData.grinders = [];
+            console.log(index);
+            document.getElementById("map-container").innerHTML="";
+            document.getElementById("grinders-container").innerHTML="";
+            document.getElementById("craft-grid").innerHTML="";
+            clearIntervals();
+            bootGame(index);
+        }
+        function initMapMarkers() {
+            const container = document.getElementById("map-container");
+            container.innerHTML="";
+            gameData.markers.forEach(m => {
+                if (m.unlocked ){
+                const div = document.createElement("div");
+                div.className = "map-marker";
+                let left = Number(m.x);
+                if (m.name === "Chasm Mine") {
+                    left = left - 655
+                }
+                let top = Number(m.y);
+                div.style.left = left + "px"; 
+                div.style.top = top + "px";
+                div.setAttribute("data-name", m.name);
+                div.onclick = () => switchMap(gameData.markers.indexOf(m));
+                container.appendChild(div);
+            }
+            });
+        }
+        // --- PARSING LOGIC ---
+        function parseEquation(str) {
+            if (!str || str === "nothing=0" || str === "") return {};
+            const result = {};
+            str.split(",").forEach(pair => {
+                const [item, qty] = pair.split("=");
+                if (item && item !== "nothing") {
+                    result[item.trim()] = parseFloat(qty);
+                }
+            });
+            return result;
+        }
+
+        function parseMapData(xmlDoc) {
+            xmlDoc.querySelectorAll("grinders item").forEach(el => {
+                let occRaw = el.getAttribute("occurance").split(",");
+                let sum = occRaw.reduce((acc, val) => val !== "remainder" ? acc + Number(val) : acc, 0);
+                let occ = occRaw.map(val => val === "remainder" ? Math.max(0, 100 - sum) : Number(val));
+
+                gameData.grinders.push({
+                    name: el.getAttribute("name"),
+                    generates: el.getAttribute("generates").split(","),
+                    occurance: occ,
+                    img: el.getAttribute("img")
+                });
+            });
+
+            xmlDoc.querySelectorAll("grinds item").forEach(el => {
+                gameData.grinds[el.getAttribute("name")] = {
+                    drops: parseEquation(el.getAttribute("drops")),
+                    dependency: el.getAttribute("dependency").split(","),
+                    timeToBreak: el.getAttribute("timeToBreak").split(",").map(Number),
+                    img: el.getAttribute("img"),
+                    achievement: el.getAttribute("achievement")
+                };
+            });
+
+            xmlDoc.querySelectorAll("crafters item").forEach(el => {
+                const craftedStr = el.getAttribute("craftedItems");
+                const mainName = craftedStr.split("=")[0].trim();
+
+                gameData.crafters.push({
+                    name: mainName,
+                    ingredients: parseEquation(el.getAttribute("ingrediens")),
+                    requiredItem: el.getAttribute("requiredItem"),
+                    craftedItems: parseEquation(craftedStr),
+                    img: el.getAttribute("image"),
+                    type: el.getAttribute("type"),
+                    tooltip: el.getAttribute("tooltip"),
+                    achievement: el.getAttribute("achievement"),
+                    soundPrefix: el.getAttribute("soundPrefix"),
+                    onComplete: el.getAttribute("onComplete")
+                });
+            });
+        }
+        function showGrinderTooltip(e, g) {
+            let html = `<strong>${g.name}</strong><br>Produces:<br>`;
+            g.generates.forEach(item => {
+                if (item !== "nothing") html += `- ${item}<br>`;
+            });
+            tooltipEl.innerHTML = html;
+            tooltipEl.style.display = "block";
+            moveTooltip(e);
+        }
+        function handleOnComplete(onCompleteString) {
+            if (!onCompleteString) return;
+
+            if (onCompleteString.includes("markMap")) {
+                // Extract the part after "markMap " and before the first comma
+                const data = onCompleteString.split("markMap ")[1].split(",")[0];
+                
+                // Use indexOf to find the FIRST dash, instead of lastIndexOf
+                const firstDashIndex = data.indexOf('-');
+                
+                // If there is a dash, take everything before it; otherwise, use the whole string
+                const markerName = (firstDashIndex !== -1) 
+                    ? data.substring(0, firstDashIndex) 
+                    : data;
+
+                // Clean up the name if necessary
+                const cleanName = markerName.replace(/-/g, ' ');
+
+                // Find and unlock the marker
+                const marker = gameData.markers.find(m => m.name.toLowerCase() === cleanName.toLowerCase());
+                
+                if (marker) {
+                    marker.unlocked = true;
+                    console.log(`Unlocked: ${marker.name}`);
+                    initMapMarkers();
+                }
+            }
+        }
+        // --- UI INITIALIZATION ---
+        function initUI() {
+            const grindersContainer = document.getElementById("grinders-container");
+            const craftGrid = document.getElementById("craft-grid");
+
+            gameData.grinders.forEach((g, index) => {
+                const btn = document.createElement("div");
+                btn.className = "grinder-btn";
+                btn.id = `grinder-${index}`;
+                btn.onclick = () => doGrind(index);
+
+                // Tooltip for grinder
+                btn.onmouseenter = (e) => showGrinderTooltip(e, g);
+                btn.onmouseleave = hideTooltip;
+                btn.onmousemove = moveTooltip;
+
+                const bgSrc = `${assetRoot}img/${g.img}`;
+                const firstItemName = g.generates.find(name => name !== "nothing");
+                const firstItemImg = gameData.grinds[firstItemName]?.img || g.img;
+                const iconSrc = `${assetRoot}img/${firstItemImg}`;
+
+                // Inside initUI()
+                // Inside initUI(), during the grinder creation loop:
+                // Inside initUI(), during the grinder creation loop:
+                btn.innerHTML = `
+                    <img class="bg-img" src="${bgSrc}" draggable="false">
+                    <span>${g.name}</span>
+                    <div id="tool-container-${index}" class="tool-container"></div>
+                    <div class="icon-wrapper" id="icon-wrapper-${index}">
+                        <div class="progress-container" style="display:none;">
+                            <div class="progress-bar" id="prog-grind-${index}"></div>
+                        </div>
+                    </div>
+                `;
+
+                // Pre-create all possible result icons for this grinder
+                const iconWrapper = btn.querySelector(`#icon-wrapper-${index}`);
+                const uniqueGenerates = [...new Set(g.generates)]; // Remove duplicates
+
+                uniqueGenerates.forEach(itemName => {
+                    if (itemName === "nothing") return;
+
+                    const img = document.createElement("img");
+                    img.className = "icon result-icon";
+                    img.id = `result-${index}-${itemName}`;
+                    const itemImg = gameData.grinds[itemName]?.img || g.img;
+                    img.src = `${assetRoot}img/${itemImg}`;
+                    img.draggable = false;
+                    img.style.display = "none"; // Hide all initially
+
+                    // Insert before the progress bar
+                    iconWrapper.insertBefore(img, iconWrapper.firstChild);
+                });
+
+                // Show the first valid icon by default
+                const firstIcon = iconWrapper.querySelector('.result-icon');
+                if (firstIcon) firstIcon.style.display = "block";
+
+                // Pre-create all possible tools for this specific grinder
+                const toolContainer = btn.querySelector(`#tool-container-${index}`);
+                // Get all unique dependencies for items this grinder can produce
+                // ... inside initUI, where you calculate allPossibleTools ...
+                const allPossibleTools = new Set();
+                allPossibleTools.add("hand"); // Force "hand" to be included!
+
+                g.generates.forEach(itemName => {
+                    if (gameData.grinds[itemName]) {
+                        gameData.grinds[itemName].dependency.forEach(d => allPossibleTools.add(d));
+                    }
+                });
+
+                allPossibleTools.forEach(toolName => {
+                    // We only filter out "none", keep "hand"
+                    if (toolName === "none") return; 
+                    
+                    const img = document.createElement("img");
+                    img.className = "active-tool";
+                    img.id = `tool-${index}-${toolName}`; // This creates tool-0-hand, etc.
+                    img.src = `${assetRoot}img/${getIconFor(toolName)}`;
+                    img.style.display = "none";
+                    toolContainer.appendChild(img);
+                });
+                allPossibleTools.forEach(toolName => {
+                    if (toolName === "none") return;
+                    const img = document.createElement("img");
+                    img.className = "active-tool";
+                    img.id = `tool-${index}-${toolName}`; // Specific ID
+                    img.src = `${assetRoot}img/${getIconFor(toolName)}`;
+                    img.style.display = "none";
+                    toolContainer.appendChild(img);
+                });
+                grindersContainer.appendChild(btn);
+                g.domElement = btn; // Cache the reference
+            });
+
+            gameData.crafters.forEach((c, index) => {
+                const itemBox = document.createElement("div");
+                itemBox.className = "craft-item disabled";
+                itemBox.id = `craft-${index}`;
+
+                const imgSrc = `${assetRoot}img/${c.img}`;
+                const fallback = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjMzMzIi8+PC9zdmc+`;
+
+                itemBox.innerHTML = `
+                    <img src="${imgSrc}" onerror="this.src='${fallback}'">
+                    <span class="count" id="count-${index}"></span>
+                `;
+
+                let hoverTimer;
+
+itemBox.onmouseenter = (e) => {
+    // Start 3-second timer
+    hoverTimer = setTimeout(() => {
+        showTooltip(e, c);
+        // Track mouse movement only AFTER it appears
+        itemBox.onmousemove = moveTooltip;
+    }, 1500);
+};
+
+itemBox.onmouseleave = () => {
+    clearTimeout(hoverTimer); // Cancel timer if they leave early
+    itemBox.onmousemove = null;
+    hideTooltip();
+};
+
+// Add Right-Click support
+itemBox.oncontextmenu = (e) => {
+    e.preventDefault(); // Stop the browser menu
+    showTooltip(e, c); // Show immediately
+    itemBox.onmousemove = moveTooltip;
+};
+
+                if (c.type !== "grind") {
+                    itemBox.onclick = () => doCraft(index);
+                }
+
+                craftGrid.appendChild(itemBox);
+                c.domElement = itemBox; // Cache the reference
+                c.countSpan = document.getElementById(`count-${index}`); // Cache the span
+            });
+
+            achievements.forEach(ach => {
+                const list = document.getElementById("achievements-list");
+                const el = document.createElement("div");
+                el.className = "achievement";
+                el.innerText = ach;
+                list.appendChild(el);
+            });
+
+            updateGridUI();
+        let posX = 0, posY = 0;
+        let scale = 1;
+        let isDragging = false;
+        let startX, startY;
+
+
+
+        initMapMarkers();
+        }
+
+        // --- GAME LOGIC ---
+        function doGrind(index) {
+            const grinder = gameData.grinders[index];
+            const btn = document.getElementById(`grinder-${index}`);
+            const prog = document.getElementById(`prog-grind-${index}`);
+            const progcont = prog.parentElement;
+
+            if (btn.style.pointerEvents === "none") return;
+
+            let validGenerates = [];
+            let validOccurances = [];
+            let totalWeight = 0;
+
+            for (let i = 0; i < grinder.generates.length; i++) {
+                let itemName = grinder.generates[i];
+
+                if (itemName === "nothing") {
+                    validGenerates.push("nothing");
+                    validOccurances.push(grinder.occurance[i]);
+                    totalWeight += grinder.occurance[i];
+                    continue;
+                }
+
+                let gData = gameData.grinds[itemName];
+                if (!gData) continue;
+
+                let hasDep = false;
+                for (let dep of gData.dependency) {
+                    // --- NEW: Ignore villagers as tools ---
+                    let cData = gameData.crafters.find(c => c.name === dep);
+                    if (cData && cData.type === "villager") continue;
+
+                    if (inventory[dep] && inventory[dep] > 0) {
+                        hasDep = true;
+                        break;
+                    }
+                }
+
+                if (hasDep) {
+                    validGenerates.push(itemName);
+                    validOccurances.push(grinder.occurance[i]);
+                    totalWeight += grinder.occurance[i];
+                }
+            }
+
+            if (validGenerates.length === 0) return;
+
+            let randomNum = Math.random() * totalWeight;
+            let selectedItemName = validGenerates[0];
+
+            for (let i = 0; i < validOccurances.length; i++) {
+                if (randomNum < validOccurances[i]) {
+                    selectedItemName = validGenerates[i];
+                    break;
+                }
+                randomNum -= validOccurances[i];
+            }
+
+            let bestTime = 1;
+            let grindData = null;
+            let soundPrefix = null;
+            let bestDep = "hand"; // Default fallback tool
+
+            if (selectedItemName !== "nothing") {
+
+                grindData = gameData.grinds[selectedItemName];
+                bestTime = Infinity;
+
+                // Find the best tool you own
+                // Find the best tool you own
+                for (let i = 0; i < grindData.dependency.length; i++) {
+                    let dep = grindData.dependency[i];
+
+                    // --- NEW: Ignore villagers as tools ---
+                    let cData = gameData.crafters.find(c => c.name === dep);
+                    if (cData && cData.type === "villager") continue;
+
+                    if (inventory[dep] && inventory[dep] > 0) {
+                        let time = grindData.timeToBreak[i];
+                        if (time < bestTime) {
+                            bestTime = time;
+                            bestDep = dep; // Track the best tool to display it
+                        }
+                    }
+                }
+                if (bestTime === Infinity) bestTime = 1;
+
+                const cData = gameData.crafters.find(c => c.name === selectedItemName);
+                if (cData) soundPrefix = cData.soundPrefix;
+            }
+
+            // --- Show the Active Tool ---
+            // --- Show the Active Result Icon ---
+            const allResultIcons = btn.querySelectorAll('.result-icon');
+            allResultIcons.forEach(icon => icon.style.display = "none"); // Hide all
+
+            if (selectedItemName !== "nothing") {
+                const activeResultIcon = document.getElementById(`result-${index}-${selectedItemName}`);
+                if (activeResultIcon) activeResultIcon.style.display = "block";
+            } else {
+                // Fallback to the first icon if "nothing" is rolled
+                if (allResultIcons.length > 0) allResultIcons[0].style.display = "block";
+            }
+
+            // --- Show the Active Tool ---
+            const toolEl = document.getElementById(`tool-${index}-${bestDep}`);
+            if (toolEl) {
+                toolEl.style.display = "block";
+            }
+            btn.style.pointerEvents = "none";
+            prog.style.transition = `width ${bestTime * timeScale}s linear`;
+            progcont.style.display = "block";
+
+
+            setTimeout(() => {
+                prog.style.width = "100%";
+            }, 4 * timeScale);
+            if (soundPrefix) {
+                playSound(soundPrefix, bestTime);
+            }
+
+            setTimeout(() => {
+                if (grindData) {
+                    // --- NEW MULTIPLIER LOGIC ---
+                    let multiplier = 1;
+                    gameData.crafters.forEach(c => {
+                        const commands = c.onComplete ? c.onComplete.split(',') : [];
+                        const isOwner = commands.some(cmd => 
+                            cmd.trim().toLowerCase() === `automate ${grinder.name.toLowerCase()}`
+                        );
+                        
+                        if (isOwner && (inventory[c.name] || 0) > 0) {
+                            multiplier += inventory[c.name]; // Use += if you want to stack villagers, or = if you want 1:1
+                        }
+                    });
+
+                    // Give items multiplied by the villager count
+                    for (let [item, qty] of Object.entries(grindData.drops)) {
+                        inventory[item] = Math.floor((inventory[item] || 0) + (qty * multiplier));
+                    }
+                    checkAchievement(grindData.achievement);
+                }
+
+                // Hide tool and reset progress bar
+                if (toolEl) toolEl.style.display = "none";
+                prog.style.transition = "none";
+                prog.style.width = "0%";
+                btn.style.pointerEvents = "auto";
+                progcont.style.display = "none";
+
+                saveGame();
+                updateGridUI();
+            }, bestTime * 1000 * timeScale);
+        }
+        function autoGrindLoop() {
+            gameData.grinders.forEach((g, index) => {
+                const btn = document.getElementById(`grinder-${index}`);
+
+                // Only run if the grinder is active
+                if (btn && btn.style.display !== "none" && btn.style.pointerEvents !== "none") {
+
+                    gameData.crafters.forEach(c => {
+                        // Split on comma to get individual commands
+                        const commands = c.onComplete ? c.onComplete.split(',') : [];
+
+                        // Only trigger if we have an exact match for "automate [grinderName]"
+                        const shouldAutomate = commands.some(cmd =>
+                            cmd.trim().toLowerCase() === `automate ${g.name.toLowerCase()}`
+                        );
+
+                        if (shouldAutomate && (inventory[c.name] || 0) > 0) {
+                            doGrind(index);
+                        }
+                    });
+                }
+            });
+        }
+        function doCraft(index) {
+            const crafter = gameData.crafters[index];
+            if (!canAfford(crafter)) return;
+
+            for (let [item, qty] of Object.entries(crafter.ingredients)) {
+                inventory[item] -= qty;
+            }
+
+            for (let [item, qty] of Object.entries(crafter.craftedItems)) {
+                inventory[item] = (inventory[item] || 0) + qty;
+            }
+
+            playSound(crafter.soundPrefix, 0);
+            checkAchievement(crafter.achievement);
+            if (crafter.onComplete) {
+                handleOnComplete(crafter.onComplete);
+            }
+            saveGame();
+            updateGridUI();
+        }
+
+        function canAfford(crafter) {
+            // 1. Check if the player has at least one of the required tools
+            if (crafter.requiredItem && crafter.requiredItem !== "nothing") {
+                const tools = crafter.requiredItem.split(',');
+                let hasTool = false;
+
+                for (let tool of tools) {
+                    const t = tool.trim();
+                    if (inventory[t] && inventory[t] >= 1) {
+                        hasTool = true;
+                        break; // We found a valid tool, stop searching
+                    }
+                }
+
+                if (!hasTool) return false; // If we didn't find any of the tools, you can't afford it
+            }
+
+            // 2. Check if the player has enough raw ingredients
+            for (let [item, qty] of Object.entries(crafter.ingredients)) {
+                if (!inventory[item] || inventory[item] < qty) return false;
+            }
+
+            return true;
+        }
+
+        function updateGridUI() {
+            // 1. Update Crafters
+            for (let c of gameData.crafters) {
+                const itemBox = c.domElement;
+                const countSpan = c.countSpan;
+                const currentQty = Math.floor(inventory[c.name] || 0);
+
+                countSpan.innerText = currentQty > 0 ? currentQty : "";
+
+                if (c.type === "grind") {
+                    // Using classList.toggle is faster and cleaner than remove/add
+                    itemBox.classList.toggle("disabled", currentQty === 0);
+                } else {
+                    itemBox.classList.toggle("disabled", !canAfford(c));
+                }
+            }
+
+            // 2. Update Grinders
+            for (let g of gameData.grinders) {
+                const btn = g.domElement;
+                let isVisible = false;
+
+                for (let itemName of g.generates) {
+                    if (itemName === "nothing") continue;
+                    let gData = gameData.grinds[itemName];
+                    if (gData && gData.dependency.some(dep => (inventory[dep] || 0) > 0)) {
+                        isVisible = true;
+                        break;
+                    }
+                }
+
+                btn.style.display = isVisible ? "flex" : "none";
+            }
+        }
+
+        function checkAchievement(achText) {
+            if (achText && achText !== "nothing" && !achievements.includes(achText)) {
+                achievements.push(achText);
+                const list = document.getElementById("achievements-list");
+                const el = document.createElement("div");
+                el.className = "achievement";
+                el.innerText = achText;
+                list.prepend(el);
+
+                playSound("achieve", 0);
+            }
+        }
+
+        // --- TOOLTIP & HIGHLIGHT LOGIC ---
+        const tooltipEl = document.getElementById("tooltip");
+
+        function showTooltip(e, crafter) {
+            let html = `<div class="tooltip-title">${crafter.name.toLowerCase()}</div>`;
+
+            // Ingredients Box Section
+            const ingKeys = Object.keys(crafter.ingredients);
+            if (ingKeys.length > 0) {
+                html += `<div class="tooltip-ingredients">`;
+                for (let [item, qty] of Object.entries(crafter.ingredients)) {
+                    let iconSrc = getIconFor(item);
+                    let fallback = `data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=`; // Transparent fallback
+                    html += `
+                <div class="ingredient-box">
+                    <img src="${assetRoot}img/${iconSrc}" onerror="this.src='${fallback}'">
+                    <span class="qty">${qty}</span>
+                </div>
+            `;
+                }
+                html += `</div>`;
+            }
+
+            // Description Section
+            if (crafter.tooltip) {
+                html += `<div class="tooltip-desc">${crafter.tooltip}</div>`;
+            }
+
+            // Highlight Logic (Kept exactly as you had it previously)
+            // Highlight Logic (Updated to include required tools)
+            // --- Highlight Logic (Updated to highlight ALL tools and grind dependencies) ---
+            let reqs = {};
+
+            if (crafter.type !== "grind") {
+                // 1. Highlight ingredients for crafting
+                for (let [item, qty] of Object.entries(crafter.ingredients)) {
+                    const has = inventory[item] || 0;
+                    reqs[item] = (has >= qty) ? 'have' : 'lack';
+                }
+
+                // 2. Highlight required tool(s) for crafting
+                if (crafter.requiredItem && crafter.requiredItem !== "nothing") {
+                    // Split by comma in case a recipe requires multiple tools
+                    const tools = crafter.requiredItem.split(',');
+                    tools.forEach(tool => {
+                        const t = tool.trim();
+                        if (t) {
+                            const hasTool = inventory[t] || 0;
+                            reqs[t] = (hasTool >= 1) ? 'have' : 'lack';
+                        }
+                    });
+                }
+            } else {
+                // 3. Highlight ALL harvesting tools for Grind items
+                const grindData = gameData.grinds[crafter.name];
+                if (grindData && grindData.dependency) {
+                    grindData.dependency.forEach(dep => {
+                        if (dep !== "none" && dep !== "nothing") {
+                            const hasTool = inventory[dep] || 0;
+                            reqs[dep] = (hasTool >= 1) ? 'have' : 'lack';
+                            
+                        }
+                    });
+                }
+            }
+
+            // Apply the classes to the grid
+            // Instead of iterating over all crafters, iterate only over the ingredients
+            for (let [item, qty] of Object.entries(crafter.ingredients)) {
+                // Find the crafter index for this specific ingredient
+                const ingredientIndex = gameData.crafters.findIndex(c => c.name === item);
+                if (ingredientIndex !== -1) {
+                    const itemBox = document.getElementById(`craft-${ingredientIndex}`);
+                    if (itemBox) {
+                        const has = inventory[item] || 0;
+                        if (has >= qty) {
+                            itemBox.classList.add("highlight-have");
+                        } else {
+                            itemBox.classList.add("highlight-lack");
+                        }
+                    }
+                }
+            }
+            // --- Apply the classes to the grid ---
+            // Iterate over the reqs object instead of ingredients
+            for (let [itemName, status] of Object.entries(reqs)) {
+                // Find the crafter index for this item/tool
+                const itemIndex = gameData.crafters.findIndex(c => c.name === itemName);
+                
+                if (itemIndex !== -1) {
+                    const itemBox = document.getElementById(`craft-${itemIndex}`);
+                    if (itemBox) {
+                        // Add the corresponding class based on status ('have' or 'lack')
+                        itemBox.classList.add(status === 'have' ? "highlight-have" : "highlight-lack");
+                    }
+                }
+            }
+            tooltipEl.innerHTML = html;
+            tooltipEl.style.display = "block";
+            moveTooltip(e);
+        }
+        function getIconFor(itemName) {
+            if (!itemName || itemName === "none" || itemName === "hand") return "hand.png"; // Fallback
+
+            let crafter = gameData.crafters.find(c => c.name === itemName);
+            if (crafter && crafter.img) return crafter.img;
+
+            let grind = gameData.grinds[itemName];
+            if (grind && grind.img) return grind.img;
+
+            return itemName + ".png"; // Blind fallback attempt
+        }
+        function showGrinderTooltip(e, g) {
+            let html = ``;
+
+            g.generates.forEach(item => {
+                if (item === "nothing") return;
+                let gData = gameData.grinds[item];
+                if (!gData) return;
+
+                // Find the most basic required tool (ignore "none" or "hand" if others exist)
+                let dep = gData.dependency.find(d => d !== "none" && d !== "hand") || gData.dependency[0] || "hand";
+
+                let toolIcon = getIconFor(dep);
+                let resultIcon = getIconFor(item);
+                let fallback = `data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=`;
+
+                html += `
+            <div class="grind-row">
+                <img class="tool-icon" src="${assetRoot}img/${toolIcon}" onerror="this.src='${fallback}'">
+                <img class="arrow-icon" src="${assetRoot}img/craftingArrow.png" alt="->">
+                <img class="result-icon" src="${assetRoot}/img/${resultIcon}" onerror="this.src='${fallback}'">
+            </div>
+        `;
+            });
+
+            tooltipEl.innerHTML = html;
+            tooltipEl.style.display = "block";
+            moveTooltip(e);
+        }
+
+        function hideTooltip() {
+    tooltipEl.style.display = "none";
+    tooltipEl.style.left = "-9999px"; // Move it way off-screen as an extra precaution
+    
+    // Remove all highlights
+    gameData.crafters.forEach((c, index) => {
+        const itemBox = document.getElementById(`craft-${index}`);
+        if (itemBox) {
+            itemBox.classList.remove("highlight-have", "highlight-lack");
+        }
+    });
+}
+
+function moveTooltip(e) {
+    if (!tooltipEl) return;
+
+    const offset = 20; // Distance from cursor
+    const tooltipWidth = tooltipEl.offsetWidth;
+    const tooltipHeight = tooltipEl.offsetHeight;
+
+    // Default: Position Bottom-Right of cursor
+    let newLeft = e.clientX + offset;
+    let newTop = e.clientY + offset;
+
+    // Check bounds: If Bottom-Right pushes it off-screen, flip to Top-Left
+    // Window width/height check
+    if (newLeft + tooltipWidth > window.innerWidth) {
+        newLeft = e.clientX - tooltipWidth - offset; // Flip to Left
+    }
+    if (newTop + tooltipHeight > window.innerHeight) {
+        newTop = e.clientY - tooltipHeight - offset; // Flip to Top
+    }
+
+    tooltipEl.style.position = 'fixed';
+    tooltipEl.style.left = newLeft + 'px';
+    tooltipEl.style.top = newTop + 'px';
+    tooltipEl.style.transform = 'none'; // Force no centering
+    tooltipEl.style.display = 'block';
+}
+        window.onload = bootGame(0);
+
+        // --- Updated Map Interaction Logic ---
+const container = document.getElementById("map-container");
+const viewport = document.getElementById("map-viewport");
+
+let posX = 0, posY = 0;
+let scale = 1;
+let isDragging = false;
+let startX, startY;
+
+// Helper function to unify coordinates
+function getCoords(e) {
+    if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    return { x: e.clientX, y: e.clientY };
+}
+
+function startDrag(e) {
+    isDragging = true;
+    const coords = getCoords(e);
+    startX = coords.x - posX;
+    startY = coords.y - posY;
+    viewport.style.cursor = 'grabbing';
+}
+
+function doDrag(e) {
+    if (!isDragging) return;
+    
+    // Prevent scrolling the whole page while moving the map
+    if (e.cancelable) e.preventDefault(); 
+    
+    const coords = getCoords(e);
+    posX = coords.x - startX;
+    posY = coords.y - startY;
+    
+    const scaledWidth = 1230 * scale;
+    const scaledHeight = 1230 * scale;
+
+    const minX = Math.min(0, viewport.clientWidth - scaledWidth);
+    const minY = Math.min(0, viewport.clientHeight - scaledHeight);
+    const maxX = 0;
+    const maxY = 0;
+
+    posX = Math.max(minX, Math.min(maxX, posX));
+    posY = Math.max(minY, Math.min(maxY, posY));
+
+    container.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+}
+
+function endDrag() {
+    isDragging = false;
+    viewport.style.cursor = 'grab';
+}
+
+// Mouse events
+viewport.addEventListener('mousedown', startDrag);
+document.addEventListener('mousemove', doDrag);
+document.addEventListener('mouseup', endDrag);
+
+// Touch events
+viewport.addEventListener('touchstart', startDrag, { passive: false });
+document.addEventListener('touchmove', doDrag, { passive: false });
+document.addEventListener('touchend', endDrag);
+    </script>
+</body>
+
+</html>
