@@ -5,7 +5,7 @@ Basically in the index.html you can see a `<script>` object, there is `let asset
 You can change that to any path that has your assets of GrindCraft.
 For assets go to [GrindCraft](https://grindcraft.com/game/index.html) and open devtools. Then wait untill it loads and copy all as URLs
 then in some way delete the `?636391` and other params in the URLs and get every one of them
-idk you can open Kate, paste in the URLs and CTRL+F replace with RegEx mode find `\?.*` replace ``
+idk you can open Kate, paste in the URLs and CTRL+F replace with RegEx mode find `\?.*` replace ` `
 then save and run `wget -i urls.txt -nH --cut-dirs=0 --force-directories` to fetch all of them, maybe clean up after as it litears into the `CWD` for no reason except why not.
 Then move it into your GrindCraft folder
 it should look like this: 
