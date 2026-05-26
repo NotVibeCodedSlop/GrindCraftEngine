@@ -1,11 +1,11 @@
 # GrindCraftEngine
-A engine for grindcraft
+A engine for GrindCraft
 ## 1. Setup
-Basically in the index.html you can see a <script> object, there is `let assetRoot = "./game/";`
+Basically in the index.html you can see a `<script>` object, there is `let assetRoot = "./game/";`
 You can change that to any path that has your assets of GrindCraft.
 For assets go to [GrindCraft](https://grindcraft.com/game/index.html) and open devtools. Then wait untill it loads and copy all as URLs
-then in some way delete the ?636391 and simular tags in the urls and get every one of them
-idk you can open kate, paste in the URLs and ctrl+f replace with regex mode find `\?.*` replace ``
+then in some way delete the `?636391` and other params in the URLs and get every one of them
+idk you can open Kate, paste in the URLs and CTRL+F replace with RegEx mode find `\?.*` replace ``
 then save and run `wget -i urls.txt -nH --cut-dirs=0 --force-directories` to fetch all of them, maybe clean up after as it litears into the `CWD` for no reason except why not.
 Then move it into your GrindCraft folder
 it should look like this: 
@@ -21,5 +21,5 @@ it should look like this:
 Now you need a http server for it, just don't well... put the copyrighted assets on the internet.
 I just `python -m http.server 8000`
 ## 2. Play
-Beacuse this engine is 1 to 1 with the original you can now simply play.
+Beacuse this engine uses the same file structure the original you can now simply play or edit the textures.
 You can even change the language if you change the `const mapRes = await fetch(`${assetRoot}data/maps/en/${currentMapName}.xml`);` line.
